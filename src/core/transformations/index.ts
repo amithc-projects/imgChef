@@ -14,6 +14,7 @@ import { facePrivacy } from './ai/face_detection';
 import { smartRedaction } from './ai/smart_redaction';
 import { backgroundRemoval } from './ai/background_removal';
 import { stripMetadata } from './metadata/gps';
+import { textFill, textCutout } from './creative/typography';
 
 export function registerAllTransformations() {
     transformationRegistry.register(grayscale);
@@ -48,4 +49,7 @@ export function registerAllTransformations() {
     transformationRegistry.register(smartRedaction);
     transformationRegistry.register(backgroundRemoval);
     transformationRegistry.register(stripMetadata);
+    // Typography
+    transformationRegistry.register(textFill);
+    transformationRegistry.register(textCutout);
 }

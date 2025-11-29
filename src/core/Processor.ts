@@ -63,6 +63,15 @@ export class ImageProcessor {
         for (let i = 0; i < recipe.steps.length; i++) {
             const step = recipe.steps[i];
 
+            // Check if disabled
+            if (step.disabled) {
+                // Even if disabled, we still respect the stop index loop
+                if (stopAfterStepIndex !== undefined && i === stopAfterStepIndex) {
+                    break;
+                }
+                continue;
+            }
+
             // Check condition
             if (step.condition) {
                 if (!this.evaluateCondition(step.condition, context, this.canvas)) {

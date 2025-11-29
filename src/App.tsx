@@ -9,6 +9,7 @@ import { Recipe, RecipeStep } from './core/types';
 import { registerAllTransformations } from './core/transformations';
 import { transformationRegistry } from './core/Registry';
 import { Upload, FolderInput } from 'lucide-react';
+import { arrayMove } from '@dnd-kit/sortable';
 
 // Register transformations
 registerAllTransformations();
@@ -20,6 +21,7 @@ function App() {
     steps: [],
   });
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [previewStepId, setPreviewStepId] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
 
@@ -40,7 +42,10 @@ function App() {
       ...prev,
       steps: [...prev.steps, newStep],
     }));
+    // Automatically select new step
     setSelectedStepId(newStep.id);
+    // Reset preview mode to see full result including new step
+    setPreviewStepId(null);
   };
 
   const handleRemoveStep = (stepId: string) => {
@@ -48,9 +53,15 @@ function App() {
       ...prev,
       steps: prev.steps.filter((s) => s.id !== stepId),
     }));
-    if (selectedStepId === stepId) {
-      setSelectedStepId(null);
-    }
+    if (selectedStepId === stepId) setSelectedStepId(null);
+    if (previewStepId === stepId) setPreviewStepId(null);
+  };
+
+  const handleReorderSteps = (startIndex: number, endIndex: number) => {
+    setRecipe((prev) => ({
+      ...prev,
+      steps: arrayMove(prev.steps, startIndex, endIndex),
+    }));
   };
 
   const handleUpdateParams = (params: any) => {
@@ -61,6 +72,36 @@ function App() {
         s.id === selectedStepId ? { ...s, params } : s
       ),
     }));
+  };
+
+  const handleUpdateCondition = (condition: any) => {
+    if (!selectedStepId) return;
+    setRecipe((prev) => ({
+      ...prev,
+      steps: prev.steps.map((s) =>
+        s.id === selectedStepId ? { ...s, condition } : s
+      ),
+    }));
+  };
+
+  // Toggle Disable/Enable
+  const handleToggleStep = (stepId: string) => {
+    setRecipe((prev) => ({
+      ...prev,
+      steps: prev.steps.map((s) =>
+        s.id === stepId ? { ...s, disabled: !s.disabled } : s
+      )
+    }));
+  };
+
+  // Toggle Partial Preview
+  const handlePreviewStep = (stepId: string) => {
+    // If clicking the same step that is already previewing, turn off preview mode (show all)
+    if (previewStepId === stepId) {
+      setPreviewStepId(null);
+    } else {
+      setPreviewStepId(stepId);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,22 +118,11 @@ function App() {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
     setBatchFiles(imageFiles);
 
-    // Auto-load first image for preview if none selected
     if (imageFiles.length > 0 && !originalImage) {
       const img = new Image();
       img.onload = () => setOriginalImage(img);
       img.src = URL.createObjectURL(imageFiles[0]);
     }
-  };
-
-  const handleUpdateCondition = (condition: any) => {
-    if (!selectedStepId) return;
-    setRecipe((prev) => ({
-      ...prev,
-      steps: prev.steps.map((s) =>
-        s.id === selectedStepId ? { ...s, condition } : s
-      ),
-    }));
   };
 
   const handleSaveRecipe = () => {
@@ -107,14 +137,17 @@ function App() {
   };
 
   const handleLoadRecipe = (newRecipe: Recipe) => {
-    // Ensure IDs are unique if needed, or just replace
     setRecipe(newRecipe);
     setSelectedStepId(null);
+    setPreviewStepId(null);
   };
 
   const selectedStep = recipe.steps.find((s) => s.id === selectedStepId) || null;
-  const selectedStepIndex = selectedStepId
-    ? recipe.steps.findIndex(s => s.id === selectedStepId)
+
+  // Calculate the index to stop at.
+  // If previewStepId is set, stop there. Otherwise undefined (run all).
+  const previewStopIndex = previewStepId
+    ? recipe.steps.findIndex(s => s.id === previewStepId)
     : undefined;
 
   return (
@@ -123,12 +156,16 @@ function App() {
       <RecipeEditor
         recipe={recipe}
         onRemoveStep={handleRemoveStep}
-        onUpdateStep={() => { }} // TODO: Implement reorder
-        onReorderSteps={() => { }}
+        onUpdateStep={handleUpdateParams}
+        onReorderSteps={handleReorderSteps}
         selectedStepId={selectedStepId}
         onSelectStep={setSelectedStepId}
         onSaveRecipe={handleSaveRecipe}
         onLoadRecipe={handleLoadRecipe}
+        // New Props
+        previewStepId={previewStepId}
+        onPreviewStep={handlePreviewStep}
+        onToggleStep={handleToggleStep}
       />
       <div className="main-area">
         <div className="toolbar">
@@ -158,7 +195,7 @@ function App() {
         <PreviewCanvas
           originalImage={originalImage}
           recipe={recipe}
-          stopAfterStepIndex={selectedStepIndex}
+          stopAfterStepIndex={previewStopIndex}
         />
         {batchFiles.length > 0 && (
           <BatchRunner files={batchFiles} recipe={recipe} />

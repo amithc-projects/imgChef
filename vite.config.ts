@@ -15,7 +15,10 @@ export default defineConfig({
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
+      // CHANGED: 'require-corp' -> 'credentialless'
+      // This allows loading external resources (like OSM Tiles) without them needing specific CORS headers,
+      // while still enabling the SharedArrayBuffer needed for mp4-muxer.
+      'Cross-Origin-Embedder-Policy': 'credentialless'
     }
   }
 })

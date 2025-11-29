@@ -5,14 +5,14 @@ export interface ParameterDefinition {
     label: string;
     type: ParameterType;
     defaultValue?: any;
-    options?: { label: string; value: any }[]; // For select
+    options?: { label: string; value: any }[];
     min?: number;
     max?: number;
     step?: number;
 }
 
 export interface Condition {
-    field: string; // e.g., 'width', 'height', 'aspectRatio', 'metadata.iso'
+    field: string;
     operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'contains';
     value: any;
 }
@@ -41,6 +41,7 @@ export interface RecipeStep {
     transformationId: string;
     params: Record<string, any>;
     condition?: Condition;
+    disabled?: boolean; // New property
 }
 
 export interface Recipe {
