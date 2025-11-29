@@ -1,59 +1,112 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Recipe, RecipeStep } from '../core/types';
 import { transformationRegistry } from '../core/Registry';
-import { Trash2, GripVertical } from 'lucide-react';
+import { Trash2, GripVertical, Save, FolderOpen } from 'lucide-react';
 
 interface RecipeEditorProps {
-    recipe: Recipe;
-    onUpdateStep: (stepId: string, params: any) => void;
-    onRemoveStep: (stepId: string) => void;
-    onReorderSteps: (startIndex: number, endIndex: number) => void;
-    selectedStepId: string | null;
-    onSelectStep: (stepId: string) => void;
+  recipe: Recipe;
+  onUpdateStep: (stepId: string, params: any) => void;
+  onRemoveStep: (stepId: string) => void;
+  onReorderSteps: (startIndex: number, endIndex: number) => void;
+  selectedStepId: string | null;
+  onSelectStep: (stepId: string) => void;
+  onSaveRecipe: () => void;
+  onLoadRecipe: (recipe: Recipe) => void;
 }
 
 export const RecipeEditor: React.FC<RecipeEditorProps> = ({
-    recipe,
-    onRemoveStep,
-    selectedStepId,
-    onSelectStep,
+  recipe,
+  onRemoveStep,
+  selectedStepId,
+  onSelectStep,
+  onSaveRecipe,
+  onLoadRecipe,
 }) => {
-    return (
-        <div className="recipe-editor">
-            <h3>Recipe Steps</h3>
-            <div className="steps-list">
-                {recipe.steps.map((step, index) => {
-                    const def = transformationRegistry.get(step.transformationId);
-                    return (
-                        <div
-                            key={step.id}
-                            className={`step-item ${selectedStepId === step.id ? 'selected' : ''}`}
-                            onClick={() => onSelectStep(step.id)}
-                        >
-                            <div className="step-handle">
-                                <GripVertical size={16} />
-                            </div>
-                            <div className="step-info">
-                                <span className="step-name">{def?.name || step.transformationId}</span>
-                                <span className="step-desc">{def?.description}</span>
-                            </div>
-                            <button
-                                className="btn-icon delete-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemoveStep(step.id);
-                                }}
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    );
-                })}
-                {recipe.steps.length === 0 && (
-                    <div className="empty-state">No steps in this recipe. Add one below!</div>
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = event.target?.result as string;
+        const loadedRecipe = JSON.parse(json);
+        // Validate basic structure
+        if (loadedRecipe.steps && Array.isArray(loadedRecipe.steps)) {
+          onLoadRecipe(loadedRecipe);
+        } else {
+          alert('Invalid recipe file');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to parse recipe file');
+      }
+    };
+    reader.readAsText(file);
+    // Reset input
+    e.target.value = '';
+  };
+
+  return (
+    <div className="recipe-editor">
+      <div className="recipe-header">
+        <h3>Recipe Steps</h3>
+        <div className="recipe-actions">
+          <button className="btn-icon" title="Save Recipe" onClick={onSaveRecipe}>
+            <Save size={16} />
+          </button>
+          <button className="btn-icon" title="Load Recipe" onClick={() => fileInputRef.current?.click()}>
+            <FolderOpen size={16} />
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".json"
+            onChange={handleFileChange}
+          />
+        </div>
+      </div>
+      <div className="steps-list">
+        {recipe.steps.map((step, index) => {
+          const def = transformationRegistry.get(step.transformationId);
+          return (
+            <div
+              key={step.id}
+              className={`step-item ${selectedStepId === step.id ? 'selected' : ''}`}
+              onClick={() => onSelectStep(step.id)}
+            >
+              <div className="step-handle">
+                <GripVertical size={16} />
+              </div>
+              <div className="step-info">
+                <span className="step-name">{def?.name || step.transformationId}</span>
+                <span className="step-desc">{def?.description}</span>
+                {step.condition && (
+                  <span className="step-condition">
+                    IF {step.condition.field} {step.condition.operator} {step.condition.value}
+                  </span>
                 )}
+              </div>
+              <button
+                className="btn-icon delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveStep(step.id);
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
-            <style>{`
+          );
+        })}
+        {recipe.steps.length === 0 && (
+          <div className="empty-state">No steps in this recipe. Add one below!</div>
+        )}
+      </div>
+      <style>{`
         .recipe-editor {
           display: flex;
           flex-direction: column;
@@ -62,11 +115,20 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({
           border-right: 1px solid var(--color-border);
           width: 300px;
         }
-        .recipe-editor h3 {
-          padding: var(--spacing-md);
+        .recipe-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .recipe-header h3 {
           margin: 0;
-          border-bottom: 1px solid var(--color-border);
           font-size: 1rem;
+        }
+        .recipe-actions {
+            display: flex;
+            gap: var(--spacing-sm);
         }
         .steps-list {
           flex: 1;
@@ -109,6 +171,11 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({
           font-size: 0.75rem;
           color: var(--color-text-secondary);
         }
+        .step-condition {
+            font-size: 0.7rem;
+            color: var(--color-primary);
+            margin-top: 2px;
+        }
         .delete-btn {
           opacity: 0;
           transition: opacity var(--transition-fast);
@@ -123,6 +190,6 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({
           font-size: 0.9rem;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };

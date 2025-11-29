@@ -1,16 +1,21 @@
-import React from 'react';
-import { RecipeStep, ParameterDefinition } from '../core/types';
+import React, { useState } from 'react';
+import { RecipeStep, ParameterDefinition, Condition } from '../core/types';
 import { transformationRegistry } from '../core/Registry';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface TransformationControlsProps {
     step: RecipeStep | null;
     onUpdateParams: (params: any) => void;
+    onUpdateCondition: (condition: Condition | undefined) => void;
 }
 
 export const TransformationControls: React.FC<TransformationControlsProps> = ({
     step,
     onUpdateParams,
+    onUpdateCondition,
 }) => {
+    const [showCondition, setShowCondition] = useState(false);
+
     if (!step) {
         return (
             <div className="controls-empty">
@@ -26,6 +31,21 @@ export const TransformationControls: React.FC<TransformationControlsProps> = ({
         onUpdateParams({ ...step.params, [key]: value });
     };
 
+    const handleConditionChange = (field: keyof Condition, value: any) => {
+        const currentCondition = step.condition || { field: 'aspectRatio', operator: 'gt', value: 1 };
+        const newCondition = { ...currentCondition, [field]: value };
+        onUpdateCondition(newCondition);
+    };
+
+    const toggleCondition = () => {
+        if (step.condition) {
+            onUpdateCondition(undefined);
+        } else {
+            onUpdateCondition({ field: 'aspectRatio', operator: 'gt', value: 1 });
+            setShowCondition(true);
+        }
+    };
+
     return (
         <div className="transformation-controls">
             <h3>{def.name} Settings</h3>
@@ -39,6 +59,63 @@ export const TransformationControls: React.FC<TransformationControlsProps> = ({
                 {def.params.length === 0 && (
                     <div className="no-params">No parameters for this transformation.</div>
                 )}
+
+                <div className="condition-section">
+                    <div className="condition-header" onClick={() => setShowCondition(!showCondition)}>
+                        {showCondition ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <span>Conditional Execution</span>
+                        <input
+                            type="checkbox"
+                            checked={!!step.condition}
+                            onChange={(e) => {
+                                e.stopPropagation();
+                                toggleCondition();
+                            }}
+                            style={{ marginLeft: 'auto' }}
+                        />
+                    </div>
+
+                    {showCondition && step.condition && (
+                        <div className="condition-body">
+                            <div className="control-group">
+                                <label>Field</label>
+                                <select
+                                    value={step.condition.field}
+                                    onChange={(e) => handleConditionChange('field', e.target.value)}
+                                >
+                                    <option value="width">Width</option>
+                                    <option value="height">Height</option>
+                                    <option value="aspectRatio">Aspect Ratio</option>
+                                    <option value="metadata.iso">ISO (Metadata)</option>
+                                    <option value="metadata.make">Camera Make (Metadata)</option>
+                                </select>
+                            </div>
+                            <div className="control-group">
+                                <label>Operator</label>
+                                <select
+                                    value={step.condition.operator}
+                                    onChange={(e) => handleConditionChange('operator', e.target.value)}
+                                >
+                                    <option value="eq">Equals (=)</option>
+                                    <option value="neq">Not Equals (!=)</option>
+                                    <option value="gt">Greater Than (&gt;)</option>
+                                    <option value="lt">Less Than (&lt;)</option>
+                                    <option value="gte">Greater/Equal (&gt;=)</option>
+                                    <option value="lte">Less/Equal (&lt;=)</option>
+                                    <option value="contains">Contains</option>
+                                </select>
+                            </div>
+                            <div className="control-group">
+                                <label>Value</label>
+                                <input
+                                    type="text"
+                                    value={step.condition.value}
+                                    onChange={(e) => handleConditionChange('value', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
             <style>{`
         .transformation-controls {
@@ -95,6 +172,25 @@ export const TransformationControls: React.FC<TransformationControlsProps> = ({
         .no-params {
           color: var(--color-text-secondary);
           font-style: italic;
+          margin-bottom: var(--spacing-md);
+        }
+        .condition-section {
+            border-top: 1px solid var(--color-border);
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+        }
+        .condition-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: var(--spacing-sm);
+            user-select: none;
+        }
+        .condition-body {
+            padding-left: var(--spacing-md);
+            border-left: 2px solid var(--color-border);
         }
       `}</style>
         </div>

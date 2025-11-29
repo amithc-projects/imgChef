@@ -1,25 +1,37 @@
 import { TransformationDefinition } from '../types';
 
+const parseValue = (val: string | number, ref: number): number => {
+    const str = String(val);
+    if (str.endsWith('%')) {
+        return (parseFloat(str) / 100) * ref;
+    }
+    return parseFloat(str);
+};
+
 export const resize: TransformationDefinition = {
     id: 'geo-resize',
     name: 'Resize',
     description: 'Resize the image',
     params: [
-        { name: 'width', label: 'Width', type: 'number', min: 1 },
-        { name: 'height', label: 'Height', type: 'number', min: 1 },
+        { name: 'width', label: 'Width (px or %)', type: 'text', defaultValue: '100%' },
+        { name: 'height', label: 'Height (px or %)', type: 'text', defaultValue: '' },
         { name: 'maintainAspect', label: 'Maintain Aspect Ratio', type: 'boolean', defaultValue: true },
     ],
     apply: (ctx, params) => {
         const { width, height, maintainAspect } = params;
-        let newWidth = width;
-        let newHeight = height;
+
+        let newWidth = ctx.canvas.width;
+        let newHeight = ctx.canvas.height;
+
+        if (width) newWidth = parseValue(width, ctx.canvas.width);
+        if (height) newHeight = parseValue(height, ctx.canvas.height);
 
         if (maintainAspect) {
             const aspect = ctx.canvas.width / ctx.canvas.height;
             if (width && !height) {
-                newHeight = width / aspect;
+                newHeight = newWidth / aspect;
             } else if (height && !width) {
-                newWidth = height * aspect;
+                newWidth = newHeight * aspect;
             }
         }
 
@@ -45,13 +57,18 @@ export const crop: TransformationDefinition = {
     name: 'Crop',
     description: 'Crop the image',
     params: [
-        { name: 'x', label: 'X', type: 'number', min: 0 },
-        { name: 'y', label: 'Y', type: 'number', min: 0 },
-        { name: 'width', label: 'Width', type: 'number', min: 1 },
-        { name: 'height', label: 'Height', type: 'number', min: 1 },
+        { name: 'x', label: 'X (px or %)', type: 'text', defaultValue: '0' },
+        { name: 'y', label: 'Y (px or %)', type: 'text', defaultValue: '0' },
+        { name: 'width', label: 'Width (px or %)', type: 'text', defaultValue: '100%' },
+        { name: 'height', label: 'Height (px or %)', type: 'text', defaultValue: '100%' },
     ],
     apply: (ctx, params) => {
-        const { x, y, width, height } = params;
+        const { x: xVal, y: yVal, width: wVal, height: hVal } = params;
+
+        const x = parseValue(xVal || 0, ctx.canvas.width);
+        const y = parseValue(yVal || 0, ctx.canvas.height);
+        const width = parseValue(wVal || ctx.canvas.width, ctx.canvas.width);
+        const height = parseValue(hVal || ctx.canvas.height, ctx.canvas.height);
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = width;
@@ -156,13 +173,15 @@ export const roundCorners: TransformationDefinition = {
     name: 'Round Corners',
     description: 'Round corners or make circular',
     params: [
-        { name: 'radius', label: 'Radius (px)', type: 'number', min: 0, defaultValue: 20 },
+        { name: 'radius', label: 'Radius (px or %)', type: 'text', defaultValue: '20' },
         { name: 'circular', label: 'Make Circular', type: 'boolean', defaultValue: false },
     ],
     apply: (ctx, params) => {
-        const { radius, circular } = params;
+        const { radius: rVal, circular } = params;
         const width = ctx.canvas.width;
         const height = ctx.canvas.height;
+
+        const radius = parseValue(rVal || 20, Math.min(width, height));
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = width;
@@ -193,13 +212,15 @@ export const border: TransformationDefinition = {
     name: 'Border',
     description: 'Add a border around the image',
     params: [
-        { name: 'size', label: 'Size (px)', type: 'number', min: 0, defaultValue: 20 },
+        { name: 'size', label: 'Size (px or %)', type: 'text', defaultValue: '20' },
         { name: 'color', label: 'Color', type: 'color', defaultValue: '#ffffff' },
     ],
     apply: (ctx, params) => {
-        const { size, color } = params;
+        const { size: sVal, color } = params;
         const width = ctx.canvas.width;
         const height = ctx.canvas.height;
+
+        const size = parseValue(sVal || 20, Math.min(width, height));
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = width;

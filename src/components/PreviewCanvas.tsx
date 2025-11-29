@@ -1,20 +1,73 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Recipe } from '../core/types';
 import { imageProcessor } from '../core/Processor';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
+import ExifReader from 'exifreader';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet icon issue
+// @ts-ignore
+import icon from 'leaflet/dist/images/marker-icon.png';
+// @ts-ignore
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface PreviewCanvasProps {
     originalImage: HTMLImageElement | null;
     recipe: Recipe;
+    stopAfterStepIndex?: number;
 }
 
 export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     originalImage,
     recipe,
+    stopAfterStepIndex,
 }) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+    const [showMap, setShowMap] = useState(false);
+
+    // Extract GPS
+    useEffect(() => {
+        if (!originalImage) {
+            setGps(null);
+            return;
+        }
+
+        const loadGps = async () => {
+            try {
+                const res = await fetch(originalImage.src);
+                const blob = await res.blob();
+                const tags = await ExifReader.load(blob);
+
+                if (tags['GPSLatitude'] && tags['GPSLongitude']) {
+                    // @ts-ignore
+                    const lat = tags['GPSLatitude'].description;
+                    // @ts-ignore
+                    const lng = tags['GPSLongitude'].description;
+                    setGps({ lat: parseFloat(lat), lng: parseFloat(lng) });
+                } else {
+                    setGps(null);
+                }
+            } catch (e) {
+                console.warn('Failed to load EXIF', e);
+                setGps(null);
+            }
+        };
+        loadGps();
+    }, [originalImage]);
 
     // Debounce processing
     useEffect(() => {
@@ -27,10 +80,16 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
             setLoading(true);
             setError(null);
             try {
-                const url = await imageProcessor.processToDataUrl(originalImage, recipe, {
+                const url = await imageProcessor.processToDataUrl(
                     originalImage,
-                    filename: 'preview.jpg',
-                });
+                    recipe,
+                    {
+                        originalImage,
+                        filename: 'preview.jpg',
+                        variables: new Map(),
+                    },
+                    stopAfterStepIndex
+                );
                 setPreviewUrl(url);
             } catch (err) {
                 console.error(err);
@@ -42,7 +101,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
         const timer = setTimeout(process, 500);
         return () => clearTimeout(timer);
-    }, [originalImage, recipe]);
+    }, [originalImage, recipe, stopAfterStepIndex]);
 
     // Cleanup URL
     useEffect(() => {
@@ -67,9 +126,38 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
                 </div>
             )}
             {error && <div className="preview-error">{error}</div>}
-            {previewUrl && (
-                <img src={previewUrl} alt="Preview" className="preview-image" />
+
+            {showMap && gps ? (
+                <div className="map-container">
+                    <MapContainer center={[gps.lat, gps.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        />
+                        <Marker position={[gps.lat, gps.lng]}>
+                            <Popup>
+                                Image Location
+                            </Popup>
+                        </Marker>
+                    </MapContainer>
+                    <button className="close-map-btn" onClick={() => setShowMap(false)}>
+                        Close Map
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {previewUrl && (
+                        <img src={previewUrl} alt="Preview" className="preview-image" />
+                    )}
+                    {gps && (
+                        <button className="map-toggle-btn" onClick={() => setShowMap(true)}>
+                            <MapPin size={16} />
+                            View on Map
+                        </button>
+                    )}
+                </>
             )}
+
             <style>{`
         .preview-canvas {
           flex: 1;
@@ -104,6 +192,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
           background: rgba(0, 0, 0, 0.5);
           padding: var(--spacing-md);
           border-radius: var(--radius-full);
+          z-index: 10;
         }
         .preview-error {
           position: absolute;
@@ -121,6 +210,36 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        .map-toggle-btn {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .map-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .close-map-btn {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            z-index: 1000;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
         }
       `}</style>
         </div>

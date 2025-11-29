@@ -1,8 +1,17 @@
 import { transformationRegistry } from '../Registry';
 import { grayscale, sepia, brightness, blur, noise } from './filters';
 import { resize, crop, flip, rotate, roundCorners, border } from './geometry';
+import { canvasPadding } from './geometry/canvas_padding';
+import { smartCrop } from './geometry/smart_crop';
 import { caption, watermark } from './text';
 import { exportStep } from './workflow';
+import { saveState } from './workflow/save_state';
+import { loadState } from './workflow/load_state';
+import { autoLevels, tuning, opacity } from './color_correction';
+import { sharpen, vignette, pixelate, duotone } from './advanced_filters';
+import { facePrivacy } from './ai/face_detection';
+import { smartRedaction } from './ai/smart_redaction';
+import { stripMetadata } from './metadata/gps';
 
 export function registerAllTransformations() {
     transformationRegistry.register(grayscale);
@@ -16,7 +25,21 @@ export function registerAllTransformations() {
     transformationRegistry.register(rotate);
     transformationRegistry.register(roundCorners);
     transformationRegistry.register(border);
+    transformationRegistry.register(canvasPadding);
+    transformationRegistry.register(smartCrop);
     transformationRegistry.register(caption);
     transformationRegistry.register(watermark);
     transformationRegistry.register(exportStep);
+    transformationRegistry.register(saveState);
+    transformationRegistry.register(loadState);
+    transformationRegistry.register(autoLevels);
+    transformationRegistry.register(tuning);
+    transformationRegistry.register(opacity);
+    transformationRegistry.register(sharpen);
+    transformationRegistry.register(vignette);
+    transformationRegistry.register(pixelate);
+    transformationRegistry.register(duotone);
+    transformationRegistry.register(facePrivacy);
+    transformationRegistry.register(smartRedaction);
+    transformationRegistry.register(stripMetadata);
 }

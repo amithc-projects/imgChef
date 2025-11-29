@@ -85,7 +85,37 @@ function App() {
     }
   };
 
+  const handleUpdateCondition = (condition: any) => {
+    if (!selectedStepId) return;
+    setRecipe((prev) => ({
+      ...prev,
+      steps: prev.steps.map((s) =>
+        s.id === selectedStepId ? { ...s, condition } : s
+      ),
+    }));
+  };
+
+  const handleSaveRecipe = () => {
+    const json = JSON.stringify(recipe, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${recipe.name.toLowerCase().replace(/\s+/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoadRecipe = (newRecipe: Recipe) => {
+    // Ensure IDs are unique if needed, or just replace
+    setRecipe(newRecipe);
+    setSelectedStepId(null);
+  };
+
   const selectedStep = recipe.steps.find((s) => s.id === selectedStepId) || null;
+  const selectedStepIndex = selectedStepId
+    ? recipe.steps.findIndex(s => s.id === selectedStepId)
+    : undefined;
 
   return (
     <Layout>
@@ -97,6 +127,8 @@ function App() {
         onReorderSteps={() => { }}
         selectedStepId={selectedStepId}
         onSelectStep={setSelectedStepId}
+        onSaveRecipe={handleSaveRecipe}
+        onLoadRecipe={handleLoadRecipe}
       />
       <div className="main-area">
         <div className="toolbar">
@@ -123,7 +155,11 @@ function App() {
             />
           </label>
         </div>
-        <PreviewCanvas originalImage={originalImage} recipe={recipe} />
+        <PreviewCanvas
+          originalImage={originalImage}
+          recipe={recipe}
+          stopAfterStepIndex={selectedStepIndex}
+        />
         {batchFiles.length > 0 && (
           <BatchRunner files={batchFiles} recipe={recipe} />
         )}
@@ -131,6 +167,7 @@ function App() {
       <TransformationControls
         step={selectedStep}
         onUpdateParams={handleUpdateParams}
+        onUpdateCondition={handleUpdateCondition}
       />
       <style>{`
         .main-area {

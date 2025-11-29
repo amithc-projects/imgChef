@@ -11,10 +11,17 @@ export interface ParameterDefinition {
     step?: number;
 }
 
+export interface Condition {
+    field: string; // e.g., 'width', 'height', 'aspectRatio', 'metadata.iso'
+    operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'contains';
+    value: any;
+}
+
 export interface TransformationContext {
     originalImage: HTMLImageElement;
     filename: string;
     metadata?: Record<string, any>;
+    variables: Map<string, ImageData>;
 }
 
 export interface TransformationDefinition {
@@ -33,6 +40,7 @@ export interface RecipeStep {
     id: string;
     transformationId: string;
     params: Record<string, any>;
+    condition?: Condition;
 }
 
 export interface Recipe {
