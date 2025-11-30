@@ -1,4 +1,5 @@
 import { TransformationDefinition } from '../types';
+import { resolveVariables } from '../utils/variable_substitution';
 
 export const caption: TransformationDefinition = {
     id: 'text-caption',
@@ -20,9 +21,7 @@ export const caption: TransformationDefinition = {
         let { text, position, fontSize, backgroundColor, textColor } = params;
 
         // Replace placeholders
-        if (context.filename) {
-            text = text.replace('{{filename}}', context.filename);
-        }
+        text = resolveVariables(text, context);
 
         const width = ctx.canvas.width;
         const height = ctx.canvas.height;
@@ -64,9 +63,7 @@ export const watermark: TransformationDefinition = {
     apply: (ctx, params, context) => {
         let { text, fontSize, opacity, color, angle } = params;
 
-        if (context.filename) {
-            text = text.replace('{{filename}}', context.filename);
-        }
+        text = resolveVariables(text, context);
 
         const width = ctx.canvas.width;
         const height = ctx.canvas.height;
@@ -98,6 +95,135 @@ export const watermark: TransformationDefinition = {
             for (let x = 0; x < diag * 2; x += spacingX) {
                 ctx.fillText(text, x + (y % (spacingY * 2) === 0 ? 0 : spacingX / 2), y);
             }
+        }
+
+        ctx.restore();
+    },
+};
+
+export const advancedText: TransformationDefinition = {
+    id: 'text-advanced',
+    name: 'Rich Text',
+    description: 'Advanced text with styling, positioning, and effects',
+    params: [
+        { name: 'text', label: 'Text', type: 'text', defaultValue: 'Hello World' },
+        {
+            name: 'fontFamily', label: 'Font Family', type: 'select', options: [
+                { label: 'Inter', value: 'Inter' },
+                { label: 'Arial', value: 'Arial' },
+                { label: 'Times New Roman', value: 'Times New Roman' },
+                { label: 'Courier New', value: 'Courier New' },
+                { label: 'Georgia', value: 'Georgia' },
+                { label: 'Verdana', value: 'Verdana' }
+            ], defaultValue: 'Inter'
+        },
+        { name: 'fontSize', label: 'Font Size', type: 'number', defaultValue: 48 },
+        {
+            name: 'fontWeight', label: 'Weight', type: 'select', options: [
+                { label: 'Normal', value: 'normal' },
+                { label: 'Bold', value: 'bold' }
+            ], defaultValue: 'normal'
+        },
+        {
+            name: 'fontStyle', label: 'Style', type: 'select', options: [
+                { label: 'Normal', value: 'normal' },
+                { label: 'Italic', value: 'italic' }
+            ], defaultValue: 'normal'
+        },
+        { name: 'color', label: 'Color', type: 'color', defaultValue: '#ffffff' },
+        { name: 'x', label: 'X Position (%)', type: 'range', min: 0, max: 100, defaultValue: 50 },
+        { name: 'y', label: 'Y Position (%)', type: 'range', min: 0, max: 100, defaultValue: 50 },
+        {
+            name: 'align', label: 'Align', type: 'select', options: [
+                { label: 'Left', value: 'left' },
+                { label: 'Center', value: 'center' },
+                { label: 'Right', value: 'right' }
+            ], defaultValue: 'center'
+        },
+        {
+            name: 'baseline', label: 'Baseline', type: 'select', options: [
+                { label: 'Top', value: 'top' },
+                { label: 'Middle', value: 'middle' },
+                { label: 'Bottom', value: 'bottom' }
+            ], defaultValue: 'middle'
+        },
+        { name: 'shadowColor', label: 'Shadow Color', type: 'color', defaultValue: '#000000' },
+        { name: 'shadowBlur', label: 'Shadow Blur', type: 'number', defaultValue: 0 },
+        { name: 'shadowOffsetX', label: 'Shadow Offset X', type: 'number', defaultValue: 0 },
+        { name: 'shadowOffsetY', label: 'Shadow Offset Y', type: 'number', defaultValue: 0 },
+        {
+            name: 'blendMode', label: 'Blend Mode', type: 'select', options: [
+                { label: 'Normal', value: 'source-over' },
+                { label: 'Multiply', value: 'multiply' },
+                { label: 'Screen', value: 'screen' },
+                { label: 'Overlay', value: 'overlay' },
+                { label: 'Darken', value: 'darken' },
+                { label: 'Lighten', value: 'lighten' },
+                { label: 'Color Dodge', value: 'color-dodge' },
+                { label: 'Color Burn', value: 'color-burn' },
+                { label: 'Hard Light', value: 'hard-light' },
+                { label: 'Soft Light', value: 'soft-light' },
+                { label: 'Difference', value: 'difference' },
+                { label: 'Exclusion', value: 'exclusion' }
+            ], defaultValue: 'source-over'
+        },
+        {
+            name: 'mode', label: 'Mode', type: 'select', options: [
+                { label: 'Standard', value: 'standard' },
+                { label: 'Knockout (Cutout)', value: 'knockout' },
+                { label: 'Mask (Image-in-Text)', value: 'mask' }
+            ], defaultValue: 'standard'
+        }
+    ],
+    apply: (ctx, params, context) => {
+        let {
+            text, fontFamily, fontSize, fontWeight, fontStyle, color,
+            x, y, align, baseline,
+            shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY,
+            blendMode, mode
+        } = params;
+
+        text = resolveVariables(text, context);
+
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
+
+        const posX = (x / 100) * width;
+        const posY = (y / 100) * height;
+
+        ctx.save();
+
+        // Font settings
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}, sans-serif`;
+        ctx.textAlign = align as CanvasTextAlign;
+        ctx.textBaseline = baseline as CanvasTextBaseline;
+
+        // Shadow settings
+        ctx.shadowColor = shadowColor;
+        ctx.shadowBlur = shadowBlur;
+        ctx.shadowOffsetX = shadowOffsetX;
+        ctx.shadowOffsetY = shadowOffsetY;
+
+        // Blend Mode
+        ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation;
+
+        if (mode === 'knockout') {
+            // Knockout: Text punches a hole in the image
+            // To do this, we need to use destination-out, but that only works if we are drawing on a layer.
+            // Since we are drawing directly on the canvas, we can use destination-out to erase.
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'black'; // Color doesn't matter for destination-out
+            ctx.fillText(text, posX, posY);
+        } else if (mode === 'mask') {
+            // Mask: Image exists only inside the letters
+            // This is 'destination-in'
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.fillStyle = 'black'; // Color doesn't matter
+            ctx.fillText(text, posX, posY);
+        } else {
+            // Standard
+            ctx.fillStyle = color;
+            ctx.fillText(text, posX, posY);
         }
 
         ctx.restore();

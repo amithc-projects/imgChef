@@ -24,6 +24,7 @@ function App() {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [previewStepId, setPreviewStepId] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
+  const [filename, setFilename] = useState<string>('image.jpg');
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
 
   const handleAddStep = (transformationId: string) => {
@@ -111,6 +112,7 @@ function App() {
       try {
         const img = await loadImage(file);
         setOriginalImage(img);
+        setFilename(file.name);
       } catch (e) {
         console.error("Failed to load image", e);
         alert("Failed to load image. It might be an unsupported format.");
@@ -128,6 +130,7 @@ function App() {
       try {
         const img = await loadImage(imageFiles[0]);
         setOriginalImage(img);
+        setFilename(imageFiles[0].name);
       } catch (e) {
         console.error("Failed to load first image", e);
       }
@@ -203,6 +206,7 @@ function App() {
         </div>
         <PreviewCanvas
           originalImage={originalImage}
+          filename={filename}
           recipe={recipe}
           stopAfterStepIndex={previewStopIndex}
         />

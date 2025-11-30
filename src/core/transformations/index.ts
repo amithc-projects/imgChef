@@ -4,7 +4,7 @@ import { resize, crop, flip, rotate, roundCorners, border } from './geometry';
 import { canvasPadding } from './geometry/canvas_padding';
 import { smartCrop } from './geometry/smart_crop';
 import { cropToFace } from './geometry/crop_to_face';
-import { caption, watermark } from './text';
+import { caption, watermark, advancedText } from './text';
 import { exportStep } from './workflow';
 import { saveState } from './workflow/save_state';
 import { loadState } from './workflow/load_state';
@@ -14,7 +14,11 @@ import { facePrivacy } from './ai/face_detection';
 import { smartRedaction } from './ai/smart_redaction';
 import { backgroundRemoval } from './ai/background_removal';
 import { stripMetadata } from './metadata/gps';
+import { geocodeLocation } from './metadata/geocode';
 import { textFill, textCutout } from './creative/typography';
+import { shapeOverlay } from './creative/shapes';
+import { qrCodeStamp } from './creative/qrcode';
+import { mapSideBySide } from './creative/map_view';
 import { outputFolder, outputVideo, outputGif, outputContactSheet } from './output';
 
 export function registerAllTransformations() {
@@ -34,6 +38,7 @@ export function registerAllTransformations() {
     transformationRegistry.register(cropToFace);
     transformationRegistry.register(caption);
     transformationRegistry.register(watermark);
+    transformationRegistry.register(advancedText);
     transformationRegistry.register(exportStep);
     transformationRegistry.register(saveState);
     transformationRegistry.register(loadState);
@@ -50,9 +55,14 @@ export function registerAllTransformations() {
     transformationRegistry.register(smartRedaction);
     transformationRegistry.register(backgroundRemoval);
     transformationRegistry.register(stripMetadata);
+    transformationRegistry.register(geocodeLocation);
     // Typography
     transformationRegistry.register(textFill);
     transformationRegistry.register(textCutout);
+    // Creative
+    transformationRegistry.register(shapeOverlay);
+    transformationRegistry.register(qrCodeStamp);
+    transformationRegistry.register(mapSideBySide);
 
     // Output & Aggregation
     transformationRegistry.register(outputFolder);
