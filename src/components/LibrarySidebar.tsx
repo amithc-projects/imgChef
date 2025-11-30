@@ -186,7 +186,7 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({ onAddStep }) => 
                 }
                 .search-icon {
                     position: absolute;
-                    left: 8px;
+                    right: 8px;
                     color: var(--color-text-secondary);
                 }
                 .search-box input {

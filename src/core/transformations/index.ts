@@ -20,6 +20,8 @@ import { shapeOverlay } from './creative/shapes';
 import { qrCodeStamp } from './creative/qrcode';
 import { mapSideBySide } from './creative/map_view';
 import { outputFolder, outputVideo, outputGif, outputContactSheet } from './output';
+import { zoom } from './geometry/zoom';
+
 
 export function registerAllTransformations() {
     transformationRegistry.register(grayscale);
@@ -56,6 +58,7 @@ export function registerAllTransformations() {
     transformationRegistry.register(backgroundRemoval);
     transformationRegistry.register(stripMetadata);
     transformationRegistry.register(geocodeLocation);
+    transformationRegistry.register(zoom);
     // Typography
     transformationRegistry.register(textFill);
     transformationRegistry.register(textCutout);

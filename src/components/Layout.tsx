@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Layers, Image as ImageIcon, Settings, Menu, HelpCircle, Shield, X } from 'lucide-react';
 
 interface LayoutProps {
@@ -11,10 +12,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="layout">
       <header className="header">
-        <div className="logo">
+        <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
           <ImageIcon className="icon" size={20} />
-          <h1>BatchImg</h1>
-        </div>
+          <h1>ImgChef</h1>
+        </Link>
         <nav className="nav-right">
           <div className="menu-container">
             <button
@@ -27,14 +28,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {isMenuOpen && (
               <div className="dropdown-menu">
-                <a href="#" className="menu-item">
+                <Link to="/editor" className="menu-item">
+                  <ImageIcon size={16} />
+                  <span>Editor</span>
+                </Link>
+                <Link to="/viewer" className="menu-item">
+                  <Layers size={16} />
+                  <span>Viewer</span>
+                </Link>
+                <div className="menu-divider" style={{ height: '1px', background: 'var(--color-border)', margin: '4px 0' }} />
+                <Link to="/help" className="menu-item">
                   <HelpCircle size={16} />
                   <span>Help</span>
-                </a>
-                <a href="#" className="menu-item">
+                </Link>
+                <Link to="/privacy" className="menu-item">
                   <Shield size={16} />
                   <span>Privacy</span>
-                </a>
+                </Link>
                 <a href="#" className="menu-item">
                   <Settings size={16} />
                   <span>Settings</span>

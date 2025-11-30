@@ -7,7 +7,8 @@ import { Compositor } from '../core/Compositor';
 import { extractMetadata } from '../core/MetadataExtractor';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Play, Download, Loader2, FolderOpen } from 'lucide-react';
+import { Play, Download, Loader2, FolderOpen, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface BatchRunnerProps {
     files: File[];
@@ -20,6 +21,7 @@ export const BatchRunner: React.FC<BatchRunnerProps> = ({ files, recipe }) => {
     const [zipBlob, setZipBlob] = useState<Blob | null>(null);
     const [status, setStatus] = useState<string>('');
     const [outputHandle, setOutputHandle] = useState<FileSystemDirectoryHandle | null>(null);
+    const navigate = useNavigate();
 
     const handleSelectFolder = async () => {
         try {
@@ -141,6 +143,10 @@ export const BatchRunner: React.FC<BatchRunnerProps> = ({ files, recipe }) => {
                 setStatus('Done! Ready to download.');
             } else {
                 setStatus('Done! Files saved to folder.');
+                // Auto-open viewer as requested
+                setTimeout(() => {
+                    navigate('/viewer', { state: { handle: outputHandle } });
+                }, 1500);
             }
 
         } catch (err) {
@@ -194,6 +200,13 @@ export const BatchRunner: React.FC<BatchRunnerProps> = ({ files, recipe }) => {
                     <button className="btn btn-success" onClick={downloadZip}>
                         <Download size={16} style={{ marginRight: '8px' }} />
                         Download ZIP
+                    </button>
+                )}
+
+                {!processing && outputHandle && status.startsWith('Done') && (
+                    <button className="btn btn-primary" onClick={() => navigate('/viewer', { state: { handle: outputHandle } })}>
+                        <ExternalLink size={16} style={{ marginRight: '8px' }} />
+                        View Results
                     </button>
                 )}
             </div>
