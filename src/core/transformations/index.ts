@@ -19,6 +19,9 @@ import { textFill, textCutout } from './creative/typography';
 import { shapeOverlay } from './creative/shapes';
 import { qrCodeStamp } from './creative/qrcode';
 import { mapSideBySide } from './creative/map_view';
+import { ribbon } from './creative/ribbon';
+
+
 import { outputFolder, outputVideo, outputGif, outputContactSheet } from './output';
 import { zoom } from './geometry/zoom';
 
@@ -66,6 +69,7 @@ export function registerAllTransformations() {
     transformationRegistry.register(shapeOverlay);
     transformationRegistry.register(qrCodeStamp);
     transformationRegistry.register(mapSideBySide);
+    transformationRegistry.register(ribbon);
 
     // Output & Aggregation
     transformationRegistry.register(outputFolder);

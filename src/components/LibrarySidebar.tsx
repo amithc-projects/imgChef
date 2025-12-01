@@ -24,10 +24,14 @@ interface LibrarySidebarProps {
 const getCategory = (t: TransformationDefinition) => {
   const id = t.id;
   if (id.startsWith('ai-')) return 'AI & Smart';
+  if (id === 'creative-qrcode') return 'AI & Smart';
+
   if (id.startsWith('color-')) return 'Color Correction';
   if (id.startsWith('filter-')) return 'Filters & Effects';
   if (id.startsWith('geo-') || id.startsWith('geometry-')) return 'Geometry';
-  if (id.startsWith('text-')) return 'Text & Overlays';
+
+  if (id.startsWith('text-') || id.startsWith('creative-')) return 'Text & Overlays';
+
   if (id.startsWith('meta-')) return 'Metadata';
   if (id.startsWith('workflow-')) return 'Workflow';
   return 'Other';
